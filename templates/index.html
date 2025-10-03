@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>zkOrigo - MVP</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <img src="/static/zkorigo_logo.png" alt="zkOrigo logo" class="logo"/>
+      <h1>zkOrigo</h1>
+      <p class="tag">Multi-chain stateless validator • AI risk • ISO20022 • ZK proofs</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Validate Wallet (MVP)</h2>
+      <form method="post" action="/validate">
+        <label>Chain
+          <select name="chain">
+            <option value="eth">Ethereum</option>
+            <option value="polygon">Polygon</option>
+            <option value="bnb">BNB Chain</option>
+            <option value="solana">Solana</option>
+            <option value="xrpl">XRPL</option>
+            <option value="hedera">Hedera</option>
+            <option value="xlm">Stellar (XLM)</option>
+          </select>
+        </label>
+        <label>Wallet Address
+          <input name="address" placeholder="0x..." required />
+        </label>
+        <div class="actions">
+          <button class="btn">Validate</button>
+        </div>
+      </form>
+    </section>
+
+    {% if result %}
+    <section class="panel result">
+      <h3>Result</h3>
+      <div class="grid">
+        <div><strong>Chain</strong><div>{{ result.chain }}</div></div>
+        <div><strong>Wallet</strong><div>{{ result.wallet }}</div></div>
+        <div><strong>Risk Score</strong><div class="score">{{ result.risk_score }}</div></div>
+        <div><strong>Proof ID</strong><div>{{ result.proof_id }}</div></div>
+        <div><strong>Proof (hash)</strong><div class="mono">{{ result.zk_proof }}</div></div>
+        <div><strong>AI Reason</strong><div>{{ result.ai_reason | join(', ') }}</div></div>
+        <div><strong>ISO XML</strong>
+          <div>
+            {% if xml_path %}
+              <a class="btn small" href="/{{ xml_path }}">Download XML</a>
+            {% else %}
+              <em>Not available</em>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <footer class="notice">
+      <p><strong>Note:</strong> This is an MVP. zk proof currently represented by a deterministic SHA256-based dummy hash. Upgrade path to real ZK proofs (circom/snarkjs) planned.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
