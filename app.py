@@ -6,7 +6,7 @@ import uvicorn
 import datetime, uuid
 
 from chains import check_wallet
-from ai_module import run_ai_scoring
+from ai_module import score_wallet   # ✅ tukar sini
 from zk_proof import generate_dummy_proof
 from iso_export import generate_pain001_from_result
 from rwa_module import generate_rwa_proof
@@ -52,28 +52,31 @@ async def rwa_api(payload: dict):
     return generate_rwa_proof(asset, reserve, supply)
 
 async def run_validation(chain: str, address: str):
-    # 1. Chain call (dummy fallback)
+    # 1. Chain call (fallback)
     chain_result = await check_wallet(chain, address)
 
-    # 2. AI scoring
-    risk_score, reasons = run_ai_scoring(chain, address, chain_result)
+    # 2. AI scoring (heuristic-v2)
+    ai_result = score_wallet(chain, address, chain_result)
 
-    # 3. Proof ID + hash
+    # 3. Proof ID + timestamp
     proof_id = f"zkorigo-{uuid.uuid4().hex[:12]}"
     timestamp = datetime.datetime.utcnow().isoformat() + "Z"
+
     result = {
         "chain": chain,
         "wallet": address,
-        "risk_score": risk_score,
-        "ai_reason": reasons,
-        "ai_version": "heuristic-v1",
+        "risk_score": ai_result["risk_score"],
+        "ai_reason": ai_result["reasons"],
+        "ai_version": ai_result["version"],
         "timestamp": timestamp,
         "proof_id": proof_id
     }
+
+    # 4. Add zkProof + ISO XML
     result["zk_proof"] = generate_dummy_proof(result)
     result["iso_xml"] = generate_pain001_from_result(result)
 
-    # 4. Update stats
+    # 5. Update stats
     STATS["total_proofs"] += 1
     STATS["unique_wallets"].add(address)
     STATS["by_chain"][chain] = STATS["by_chain"].get(chain, 0) + 1
