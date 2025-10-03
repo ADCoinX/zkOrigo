@@ -23,13 +23,18 @@ FALLBACK_ENDPOINTS = {
     ],
     "xrpl": [
         "https://s1.ripple.com:51234",
-        "https://xrplcluster.com"
+        "https://xrplcluster.com",
+        "https://xrpl.ws"
     ],
     "hedera": [
-        "https://mainnet-public.mirrornode.hedera.com/api/v1"
+        "https://mainnet-public.mirrornode.hedera.com/api/v1",
+        "https://testnet.mirrornode.hedera.com/api/v1",
+        "https://backup.hedera.mirrornode/api/v1"
     ],
     "xlm": [
-        "https://horizon.stellar.org"
+        "https://horizon.stellar.org",
+        "https://horizon.stellar.lobstr.co",
+        "https://horizon.stellar.expert"
     ]
 }
 
@@ -38,7 +43,7 @@ async def check_wallet(chain: str, address: str):
     for url in endpoints:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
-                if chain in ("eth","polygon","bnb"):
+                if chain in ("eth", "polygon", "bnb"):
                     # EVM chains -> eth_getBalance
                     payload = {
                         "jsonrpc": "2.0",
@@ -49,32 +54,43 @@ async def check_wallet(chain: str, address: str):
                     r = await client.post(url, json=payload)
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": int(data["result"],16), "raw": data}
+                        return {"balance": int(data["result"], 16), "raw": data}
 
                 elif chain == "solana":
-                    r = await client.post(url, json={"jsonrpc":"2.0","id":1,"method":"getBalance","params":[address]})
+                    r = await client.post(url, json={
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "getBalance",
+                        "params": [address]
+                    })
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": data.get("result",{}).get("value"), "raw": data}
+                        return {"balance": data.get("result", {}).get("value"), "raw": data}
 
                 elif chain == "xrpl":
-                    r = await client.post(url, json={"method":"account_info","params":[{"account": address}]})
+                    r = await client.post(url, json={
+                        "method": "account_info",
+                        "params": [{"account": address}]
+                    })
                     if r.status_code == 200:
                         data = r.json()
-                        bal = data.get("result",{}).get("account_data",{}).get("Balance")
+                        bal = data.get("result", {}).get("account_data", {}).get("Balance")
                         return {"balance": bal, "raw": data}
 
                 elif chain == "hedera":
                     r = await client.get(f"{url}/accounts/{address}")
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": data.get("balance",{}).get("balance"), "raw": data}
+                        bal = None
+                        if "balance" in data and isinstance(data["balance"], dict):
+                            bal = data["balance"].get("balance")
+                        return {"balance": bal, "raw": data}
 
                 elif chain == "xlm":
                     r = await client.get(f"{url}/accounts/{address}")
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": data.get("balances",[]), "raw": data}
+                        return {"balance": data.get("balances", []), "raw": data}
 
         except Exception:
             continue
