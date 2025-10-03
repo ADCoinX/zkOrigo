@@ -38,13 +38,17 @@ FALLBACK_ENDPOINTS = {
     ]
 }
 
+
 async def check_wallet(chain: str, address: str):
     endpoints = FALLBACK_ENDPOINTS.get(chain, [])
     for url in endpoints:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
+
+                # ----------------
+                # EVM Chains (ETH, BNB, Polygon)
+                # ----------------
                 if chain in ("eth", "polygon", "bnb"):
-                    # EVM chains -> eth_getBalance
                     payload = {
                         "jsonrpc": "2.0",
                         "method": "eth_getBalance",
@@ -54,8 +58,14 @@ async def check_wallet(chain: str, address: str):
                     r = await client.post(url, json=payload)
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": int(data["result"], 16), "raw": data}
+                        wei_balance = int(data["result"], 16)
+                        # convert wei -> native coin
+                        balance = wei_balance / 10**18
+                        return {"balance": balance, "raw": data}
 
+                # ----------------
+                # Solana (lamports → SOL)
+                # ----------------
                 elif chain == "solana":
                     r = await client.post(url, json={
                         "jsonrpc": "2.0",
@@ -65,8 +75,13 @@ async def check_wallet(chain: str, address: str):
                     })
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": data.get("result", {}).get("value"), "raw": data}
+                        lamports = data.get("result", {}).get("value")
+                        balance = lamports / 10**9 if lamports else 0  # lamports → SOL
+                        return {"balance": balance, "raw": data}
 
+                # ----------------
+                # XRPL (drops → XRP)
+                # ----------------
                 elif chain == "xrpl":
                     r = await client.post(url, json={
                         "method": "account_info",
@@ -74,24 +89,38 @@ async def check_wallet(chain: str, address: str):
                     })
                     if r.status_code == 200:
                         data = r.json()
-                        bal = data.get("result", {}).get("account_data", {}).get("Balance")
-                        return {"balance": bal, "raw": data}
+                        drops = data.get("result", {}).get("account_data", {}).get("Balance")
+                        balance = int(drops) / 10**6 if drops else 0  # drops → XRP
+                        return {"balance": balance, "raw": data}
 
+                # ----------------
+                # Hedera (tinybars → HBAR)
+                # ----------------
                 elif chain == "hedera":
                     r = await client.get(f"{url}/accounts/{address}")
                     if r.status_code == 200:
                         data = r.json()
-                        bal = None
+                        tinybars = None
                         if "balance" in data and isinstance(data["balance"], dict):
-                            bal = data["balance"].get("balance")
-                        return {"balance": bal, "raw": data}
+                            tinybars = data["balance"].get("balance")
+                        balance = int(tinybars) / 10**8 if tinybars else 0  # tinybars → HBAR
+                        return {"balance": balance, "raw": data}
 
+                # ----------------
+                # Stellar (direct balances → XLM)
+                # ----------------
                 elif chain == "xlm":
                     r = await client.get(f"{url}/accounts/{address}")
                     if r.status_code == 200:
                         data = r.json()
-                        return {"balance": data.get("balances", []), "raw": data}
+                        balances = data.get("balances", [])
+                        native_balance = None
+                        for b in balances:
+                            if b.get("asset_type") == "native":  # lumens
+                                native_balance = b.get("balance")
+                        return {"balance": float(native_balance) if native_balance else 0, "raw": data}
 
         except Exception:
             continue
+
     return {"error": f"All endpoints failed for {chain}"}
