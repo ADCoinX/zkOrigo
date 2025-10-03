@@ -46,14 +46,23 @@
       <div class="grid">
         <div><strong>Chain</strong><div>{{ result.chain }}</div></div>
         <div><strong>Wallet</strong><div>{{ result.wallet }}</div></div>
+        <div><strong>Balance</strong>
+          <div>
+            {% if result.balance %}
+              {{ result.balance }}
+            {% else %}
+              <em>Unknown</em>
+            {% endif %}
+          </div>
+        </div>
         <div><strong>Risk Score</strong><div class="score">{{ result.risk_score }}</div></div>
         <div><strong>Proof ID</strong><div>{{ result.proof_id }}</div></div>
         <div><strong>Proof (hash)</strong><div class="mono">{{ result.zk_proof }}</div></div>
         <div><strong>AI Reason</strong><div>{{ result.ai_reason | join(', ') }}</div></div>
         <div><strong>ISO XML</strong>
           <div>
-            {% if xml_path %}
-              <a class="btn small" href="/{{ xml_path }}">Download XML</a>
+            {% if result.xml_path %}
+              <a class="btn small" href="/{{ result.xml_path }}">Download XML</a>
             {% else %}
               <em>Not available</em>
             {% endif %}
