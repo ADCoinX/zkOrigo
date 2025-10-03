@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
-import datetime, uuid
+import datetime, uuid, os
 
 from chains import check_wallet
 from ai_module import score_wallet
@@ -15,6 +15,7 @@ app = FastAPI(title="zkOrigo - MVP")
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")  # ✅ untuk download XML
 
 # Simple stats counter
 STATS = {"total_proofs": 0, "unique_wallets": set(), "by_chain": {}}
@@ -83,7 +84,18 @@ async def run_validation(chain: str, address: str):
 
     # 5. Add zkProof + ISO XML
     result["zk_proof"] = generate_dummy_proof(result)
-    result["iso_xml"] = generate_pain001_from_result(result)
+
+    # Generate ISO XML string
+    xml_str = generate_pain001_from_result(result)
+
+    # Save XML file
+    os.makedirs("outputs", exist_ok=True)
+    filename = f"outputs/{proof_id}.xml"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(xml_str)
+
+    result["iso_xml"] = xml_str
+    result["xml_path"] = filename  # ✅ untuk template download
 
     # 6. Update stats
     STATS["total_proofs"] += 1
