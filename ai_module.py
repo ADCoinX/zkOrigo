@@ -1,3 +1,5 @@
+# ai_module.py - Heuristic AI v2 (7 chains)
+
 def score_wallet(chain: str, address: str, chain_result: dict):
     reasons = []
     score = 50  # baseline neutral
@@ -40,7 +42,7 @@ def score_wallet(chain: str, address: str, chain_result: dict):
         score -= 5
         reasons.append("Enterprise Stellar -5")
 
-   
+    # Clamp supaya 0–100
     score = max(0, min(100, score))
 
     if not reasons:
@@ -50,3 +52,4 @@ def score_wallet(chain: str, address: str, chain_result: dict):
         "risk_score": score,
         "reasons": reasons,
         "version": "heuristic-v2"
+    }
