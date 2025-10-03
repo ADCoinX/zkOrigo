@@ -46,34 +46,44 @@ Each chain integrates **three fallback RPC endpoints** to guarantee high availab
 
 ## 🛡️ InfoSec Architecture
 
-**Architecture Flow:**
+**How zkOrigo Works:**
 
-1. **User** submits a wallet address to the zkOrigo Stateless Validator.
-2. **Validator** queries public blockchain data using fallback RPC endpoints.
-3. **Validator** runs AI-driven Heuristic v2 risk scoring on the wallet.
-4. **Validator** generates an ISO20022 XML export for compliance/audit purposes.
-5. **Validator** produces a zk-Proof hash (currently a dummy, future circom/snarkjs upgrade).
-6. **User** downloads the audit report.
+```
++-------------------+
+|   User Wallet     |
++-------------------+
+          |
+          v
++---------------------------+
+| zkOrigo Stateless Validator|
++---------------------------+
+          |
+          v
++----------------------------+
+| Public RPC Endpoints (x3)  |
++----------------------------+
+          |
+          v
++------------------------+
+| Heuristic AI Engine v2 |
++------------------------+
+          |
+          v
++--------------------+     +-----------------+
+| ISO20022 XML Export|<--->| zk-Proof Hash   |
++--------------------+     +-----------------+
+          |
+          v
++-----------------+
+| Audit Report    |
++-----------------+
+```
 
-**Key Features:**
-
-- **Stateless design:** No private keys, no storage, only public blockchain data.
+**Features:**
+- **Stateless design:** No keys, no storage, only public blockchain data.
 - **AI module:** Heuristic-based scoring v2 (entropy checks, endpoint fallback, dormant wallet detection).
 - **Compliance:** ISO20022 pain.001 export for audit readiness.
 - **Quality Assurance:** SonarCloud Quality Gate Passed.
-
-> To view the original architecture diagram, you can use [Mermaid Live Editor](https://mermaid.live/) and paste the following code:
-
-```mermaid
-flowchart TD
-    User[Wallet Address] --> |Submit| Validator[zkOrigo Stateless Validator]
-    Validator --> |Query| RPC[(Public RPC Fallbacks)]
-    Validator --> |AI Heuristic v2| Risk[Risk Scoring Engine]
-    Validator --> |Generate| ISO[ISO20022 XML Export]
-    Validator --> |Produce| Proof[zk-Proof Hash (dummy → circom/snarkjs)]
-    ISO --> |Download| Report[Audit Report]
-    Proof --> Report
-```
 
 ---
 
